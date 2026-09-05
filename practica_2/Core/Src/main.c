@@ -31,6 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define CANTIDAD_REPETICIONES 5
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,6 +45,28 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 
 delay_t delay;
+
+/*
+ * Períodos de parpadeo utilizados en el patrón.
+ *
+ * 1000 ms -> 1 segundo
+ * 200 ms  -> 200 milisegundos
+ * 100 ms  -> 100 milisegundos
+ */
+tick_t periodos[] = {1000, 200, 100};
+
+/*
+ * Índice del período que estamos ejecutando.
+ * 0 -> 1000 ms
+ * 1 -> 200 ms
+ * 2 -> 100 ms
+ */
+uint8_t indicePeriodo = 0;
+
+/*
+ * Cantidad de cambios de estado del LED realizados.
+ */
+uint8_t cantidadToggles = 0;
 
 /* USER CODE END PV */
 
@@ -92,13 +115,14 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   /*
-   * Se configura un retardo de 100 ms.
+   * Inicializamos el delay con la mitad del primer período.
    *
-   * delayInit() solamente configura la duración y deja el retardo
-   * detenido. La medición del tiempo comenzará cuando delayRead()
-   * sea llamado por primera vez.
+   * El primer período es de 1000 ms y, como el ciclo de trabajo
+   * es del 50%, el LED debe permanecer 500 ms en cada estado:
+   *
+   * 500 ms encendido + 500 ms apagado = 1000 ms de período.
    */
-  delayInit(&delay, 100);
+  delayInit(&delay, periodos[0] / 2);
 
   /* USER CODE END 2 */
 
@@ -111,16 +135,55 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 	  /*
-	   * delayRead() permite consultar periódicamente si transcurrieron
-	   * los 100 ms sin detener la ejecución del programa.
-	   *
-	   * Cuando el tiempo se cumple, se cambia el estado del LED.
-	   * Por lo tanto, cada 100 ms el LED pasa de encendido a apagado
-	   * o de apagado a encendido.
+	   * delayRead() permite consultar periódicamente si transcurrió
+	   * el tiempo configurado para el retardo, sin bloquear la ejecución
+	   * del programa.
 	   */
 	  if (delayRead(&delay))
 	  {
+		  /*
+		   * Cada vez que termina el retardo se cambia el estado del LED.
+		   */
 		  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+		  /*
+		   * Contamos cada cambio de estado del LED.
+		   */
+		  cantidadToggles++;
+
+		  /*
+		   * Cada período completo requiere dos cambios de estado:
+		   *
+		   * 1 toggle -> encendido
+		   * 1 toggle -> apagado
+		   *
+		   * Por lo tanto, para completar 5 períodos necesitamos
+		   * 5 * 2 = 10 toggles.
+		   */
+		  if (cantidadToggles >= CANTIDAD_REPETICIONES * 2)
+		  {
+			  cantidadToggles = 0;
+
+		      /*
+		       * Pasamos al siguiente período del patrón.
+		       */
+		      indicePeriodo++;
+
+		      /*
+		       * Si terminamos el arreglo, volvemos al primer período.
+		       */
+		      if (indicePeriodo >= (sizeof(periodos) / sizeof(periodos[0])))
+		      {
+		    	  indicePeriodo = 0;
+		      }
+
+		      /*
+		       * Configuramos la mitad del nuevo período.
+		       *
+		       * Esto permite mantener un ciclo de trabajo del 50%.
+		       */
+		      delayWrite(&delay, periodos[indicePeriodo] / 2);
+		    }
 	  }
 
 
@@ -281,7 +344,7 @@ bool_t delayRead(delay_t *delay)
     if ((HAL_GetTick() - delay->startTime) >= delay->duration)
     {
         /*
-         * El retardo terminó, por lo que se marca como detenido.
+         * El retardo terminó, por lo que se marca como no ejecutándose.
          * La próxima llamada a delayRead() comenzará una nueva cuenta.
          */
         delay->running = false;
