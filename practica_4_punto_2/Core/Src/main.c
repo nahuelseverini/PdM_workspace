@@ -33,12 +33,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-/**
- * @brief Tiempos de parpadeo del LED en milisegundos (período lento y rápido).
- */
-#define LED_DELAY_SLOW_MS 500
-#define LED_DELAY_FAST_MS 100
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,16 +44,6 @@
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
-/**
- * @brief Retardo no bloqueante para el parpadeo del LED.
- */
-static delay_t ledDelay;
-
-/**
- * @brief Período de parpadeo actual del LED.
- */
-static tick_t ledPeriod = LED_DELAY_SLOW_MS;
 
 /* USER CODE END PV */
 
@@ -110,9 +94,6 @@ int main(void)
   /* Inicializamos la máquina de estados finitos de antirrebote */
   debounceFSM_init();
 
-  /* Inicializamos el retardo del LED con el período por defecto (500 ms) */
-  delayInit(&ledDelay, ledPeriod);
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -126,27 +107,6 @@ int main(void)
 	/* Actualización periódica no bloqueante de la MEF */
 	debounceFSM_update();
 
-    /* Lectura desacoplada de la tecla: si fue presionada, conmuta el período deseado */
-    if (readKey())
-    {
-        if (ledPeriod == LED_DELAY_SLOW_MS)
-        {
-        	ledPeriod = LED_DELAY_FAST_MS;
-        }
-        else
-        {
-        	ledPeriod = LED_DELAY_SLOW_MS;
-        }
-    }
-
-    /* Parpadeo independiente y no bloqueante del LED */
-    if (delayRead(&ledDelay))
-    {
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-        /* Aplica el período actual para el siguiente semiperíodo */
-        delayWrite(&ledDelay, ledPeriod);
-    }
   }
   /* USER CODE END 3 */
 }
