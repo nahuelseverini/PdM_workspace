@@ -26,11 +26,14 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+/**
+ * @brief Estados posibles de la Máquina de Estados Finitos de antirrebote.
+ */
 typedef enum {
-    BUTTON_UP,
-    BUTTON_FALLING,
-    BUTTON_DOWN,
-    BUTTON_RAISING
+    BUTTON_UP,      /**< Pulsador liberado (estado estable) */
+    BUTTON_FALLING, /**< Transición descendente, verificando tiempo de antirrebote */
+    BUTTON_DOWN,    /**< Pulsador presionado (estado estable) */
+    BUTTON_RAISING  /**< Transición ascendente, verificando tiempo de antirrebote */
 } debounceState_t;
 /* USER CODE END PTD */
 
@@ -59,10 +62,35 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
+
+/**
+ * @brief  Inicializa la máquina de estados finitos de antirrebote y el retardo no bloqueante.
+ * @param  None
+ * @retval None
+ */
 void debounceFSM_init(void);
+
+/**
+ * @brief  Lee el pulsador, resuelve las transiciones de estado de la MEF y ejecuta las acciones correspondientes.
+ * @param  None
+ * @retval None
+ */
 void debounceFSM_update(void);
+
+/**
+ * @brief  Acción ejecutada ante la confirmación de la pulsación del botón. Enciende el LED.
+ * @param  None
+ * @retval None
+ */
 void buttonPressed(void);
+
+/**
+ * @brief  Acción ejecutada ante la confirmación de la liberación del botón. Apaga el LED.
+ * @param  None
+ * @retval None
+ */
 void buttonReleased(void);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -230,36 +258,61 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+/**
+ * @brief  Inicializa la máquina de estados finitos de antirrebote y el retardo no bloqueante.
+ * @param  None
+ * @retval None
+ */
 void debounceFSM_init(void)
 {
     currentState = BUTTON_UP;
     delayInit(&debounceDelay, DEBOUNCE_DELAY_MS);
 }
 
+/**
+ * @brief  Acción ejecutada ante la confirmación de la pulsación del botón. Enciende el LED.
+ * @param  None
+ * @retval None
+ */
 void buttonPressed(void)
 {
-    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 }
 
+/**
+ * @brief  Acción ejecutada ante la confirmación de la liberación del botón. Apaga el LED.
+ * @param  None
+ * @retval None
+ */
 void buttonReleased(void)
 {
+    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 }
 
+/**
+ * @brief  Lee el pulsador, resuelve las transiciones de estado de la MEF y ejecuta las acciones correspondientes.
+ * @param  None
+ * @retval None
+ */
 void debounceFSM_update(void)
 {
     switch (currentState)
     {
         case BUTTON_UP:
+            /* El pulsador de la placa es activo en bajo (RESET al presionar) */
             if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) == GPIO_PIN_RESET)
             {
+                /* Inicia el retardo no bloqueante de 40 ms */
                 delayRead(&debounceDelay);
                 currentState = BUTTON_FALLING;
             }
             break;
 
         case BUTTON_FALLING:
+            /* Espera a que transcurra el tiempo de antirrebote */
             if (delayRead(&debounceDelay))
             {
+                /* Segunda lectura: si sigue presionado, se confirma la pulsación */
                 if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) == GPIO_PIN_RESET)
                 {
                     buttonPressed();
@@ -267,22 +320,27 @@ void debounceFSM_update(void)
                 }
                 else
                 {
+                    /* Falso positivo o rebote, regresa al estado inicial */
                     currentState = BUTTON_UP;
                 }
             }
             break;
 
         case BUTTON_DOWN:
+            /* Si se detecta nivel alto (SET), el usuario comenzó a soltar la tecla */
             if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) == GPIO_PIN_SET)
             {
+                /* Inicia el retardo no bloqueante de 40 ms */
                 delayRead(&debounceDelay);
                 currentState = BUTTON_RAISING;
             }
             break;
 
         case BUTTON_RAISING:
+            /* Espera a que transcurra el tiempo de antirrebote */
             if (delayRead(&debounceDelay))
             {
+                /* Segunda lectura: si sigue en nivel alto, se confirma la liberación */
                 if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) == GPIO_PIN_SET)
                 {
                     buttonReleased();
@@ -290,12 +348,14 @@ void debounceFSM_update(void)
                 }
                 else
                 {
+                    /* Falso rebote al soltar, permanece presionado */
                     currentState = BUTTON_DOWN;
                 }
             }
             break;
 
         default:
+            /* Recuperación ante estado inválido */
             debounceFSM_init();
             break;
     }
