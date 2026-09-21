@@ -26,12 +26,19 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef enum {
+    BUTTON_UP,
+    BUTTON_FALLING,
+    BUTTON_DOWN,
+    BUTTON_RAISING
+} debounceState_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define DEBOUNCE_DELAY_MS 40
+#define BUTTON_PORT GPIOC
+#define BUTTON_PIN GPIO_PIN_13
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,7 +50,8 @@
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+static debounceState_t currentState;
+static delay_t debounceDelay;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -51,7 +59,10 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+void debounceFSM_init(void);
+void debounceFSM_update(void);
+void buttonPressed(void);
+void buttonReleased(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -89,7 +100,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  debounceFSM_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -99,6 +110,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    debounceFSM_update();
   }
   /* USER CODE END 3 */
 }
@@ -217,6 +229,77 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void debounceFSM_init(void)
+{
+    currentState = BUTTON_UP;
+    delayInit(&debounceDelay, DEBOUNCE_DELAY_MS);
+}
+
+void buttonPressed(void)
+{
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+}
+
+void buttonReleased(void)
+{
+}
+
+void debounceFSM_update(void)
+{
+    switch (currentState)
+    {
+        case BUTTON_UP:
+            if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) == GPIO_PIN_RESET)
+            {
+                delayRead(&debounceDelay);
+                currentState = BUTTON_FALLING;
+            }
+            break;
+
+        case BUTTON_FALLING:
+            if (delayRead(&debounceDelay))
+            {
+                if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) == GPIO_PIN_RESET)
+                {
+                    buttonPressed();
+                    currentState = BUTTON_DOWN;
+                }
+                else
+                {
+                    currentState = BUTTON_UP;
+                }
+            }
+            break;
+
+        case BUTTON_DOWN:
+            if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) == GPIO_PIN_SET)
+            {
+                delayRead(&debounceDelay);
+                currentState = BUTTON_RAISING;
+            }
+            break;
+
+        case BUTTON_RAISING:
+            if (delayRead(&debounceDelay))
+            {
+                if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) == GPIO_PIN_SET)
+                {
+                    buttonReleased();
+                    currentState = BUTTON_UP;
+                }
+                else
+                {
+                    currentState = BUTTON_DOWN;
+                }
+            }
+            break;
+
+        default:
+            debounceFSM_init();
+            break;
+    }
+}
 
 /* USER CODE END 4 */
 
