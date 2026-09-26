@@ -64,4 +64,30 @@ void uartReceiveStringSize(uint8_t * pstring, uint16_t size);
  */
 bool_t uartReceiveByte(uint8_t * pbyte);
 
+/**
+ * @brief Baudrate mínimo admitido para reconfiguración dinámica.
+ */
+#define UART_MIN_BAUDRATE 9600
+
+/**
+ * @brief Baudrate máximo admitido para reconfiguración dinámica.
+ */
+#define UART_MAX_BAUDRATE 921600
+
+/**
+ * @brief  Obtiene la velocidad de transmisión (baudrate) actualmente configurada en la UART.
+ * @param  None
+ * @retval uint32_t: Baudrate actual en baudios (bps).
+ */
+uint32_t uartGetBaudRate(void);
+
+/**
+ * @brief  Reconfigura la velocidad de transmisión (baudrate) del periférico UART.
+ *         Valida que la velocidad solicitada se encuentre dentro del rango válido
+ *         [UART_MIN_BAUDRATE, UART_MAX_BAUDRATE] y reinicia el periférico USART2.
+ * @param  baudRate: Nueva velocidad deseada en baudios (bps).
+ * @retval bool_t: true si la reconfiguración fue exitosa, false en caso contrario.
+ */
+bool_t uartSetBaudRate(uint32_t baudRate);
+
 #endif /* API_UART_H_ */

@@ -24,6 +24,7 @@
 #include "API_delay.h"
 #include "API_debounce.h"
 #include "API_uart.h"
+#include "API_cmdparser.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -94,6 +95,9 @@ int main(void)
       Error_Handler();
   }
 
+  /* Inicialización del parser de comandos (Punto 2) */
+  cmdParserInit();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -104,12 +108,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    /* Punto 1: Eco de caracteres en modo polling no bloqueante */
-    uint8_t rxChar = 0;
-    if (uartReceiveByte(&rxChar))
-    {
-        uartSendStringSize(&rxChar, 1);
-    }
+    /* Sondeo y procesamiento de comandos recibidos por UART */
+    cmdPoll();
 
   }
   /* USER CODE END 3 */

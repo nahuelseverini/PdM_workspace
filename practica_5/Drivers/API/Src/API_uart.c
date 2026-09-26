@@ -17,6 +17,11 @@
  */
 static UART_HandleTypeDef huart2;
 
+/**
+ * @brief Almacena la velocidad de transmisión actual de la UART.
+ */
+static uint32_t currentBaudRate = UART_BAUDRATE;
+
 /* Private function prototypes -----------------------------------------------*/
 /**
  * @brief  Función interna para el manejo defensivo de errores en el módulo UART.
@@ -186,3 +191,43 @@ bool_t uartReceiveByte(uint8_t * pbyte)
 
     return false;
 }
+
+/**
+ * @brief  Obtiene la velocidad de transmisión (baudrate) actualmente configurada en la UART.
+ * @param  None
+ * @retval uint32_t: Baudrate actual en baudios (bps).
+ */
+uint32_t uartGetBaudRate(void)
+{
+    return currentBaudRate;
+}
+
+/**
+ * @brief  Reconfigura la velocidad de transmisión (baudrate) del periférico UART.
+ *         Valida que la velocidad solicitada se encuentre dentro del rango válido
+ *         [UART_MIN_BAUDRATE, UART_MAX_BAUDRATE] y reinicia el periférico USART2.
+ * @param  baudRate: Nueva velocidad deseada en baudios (bps).
+ * @retval bool_t: true si la reconfiguración fue exitosa, false en caso contrario.
+ */
+bool_t uartSetBaudRate(uint32_t baudRate)
+{
+    /* Validación defensiva del rango de velocidad permitido (9600 a 921600 bps) */
+    if (baudRate < UART_MIN_BAUDRATE || baudRate > UART_MAX_BAUDRATE)
+    {
+        uartErrorHandler();
+        return false;
+    }
+
+    /* Reinicializa la UART con la nueva velocidad */
+    huart2.Init.BaudRate = baudRate;
+
+    if (HAL_UART_Init(&huart2) != HAL_OK)
+    {
+        uartErrorHandler();
+        return false;
+    }
+
+    currentBaudRate = baudRate;
+    return true;
+}
+
