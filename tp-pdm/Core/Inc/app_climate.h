@@ -9,8 +9,8 @@
 
 #include <stdbool.h>
 
-#define APP_CLIMATE_MIN_THRESHOLD       20.0f   /* °C */
-#define APP_CLIMATE_MAX_THRESHOLD       35.0f   /* °C */
+#define APP_CLIMATE_MIN_THRESHOLD       15.0f   /* °C */
+#define APP_CLIMATE_MAX_THRESHOLD       40.0f   /* °C */
 #define APP_CLIMATE_DEFAULT_THRESHOLD   28.0f   /* °C */
 #define APP_CLIMATE_THRESHOLD_STEP       1.0f   /* °C que sube o baja por pulsación */
 
