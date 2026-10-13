@@ -51,7 +51,7 @@ float app_climate_get_threshold(void);
 
 /**
  * @brief  Cambia el umbral y pasa a modo CONFIG.
- * @param  new_threshold Valor entre 20 y 35 °C.
+ * @param  new_threshold Valor entre 15 y 40 °C.
  * @retval true si se cambió, false si el valor está fuera de rango.
  */
 bool app_climate_set_threshold(float new_threshold);

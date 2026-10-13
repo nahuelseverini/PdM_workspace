@@ -72,7 +72,7 @@ void app_climate_update(void)
     uint32_t now = bsp_get_tick();
     bool button_pressed = bsp_btn_get_pressed();
 
-    /* Muestreo periódico del sensor DHT22 cada 2000 ms */
+    /* Muestreo del sensor cada 2 segundos */
     read_sensor_if_due(now);
 
     if (!sensor_ok && current_state != CLIMATE_STATE_INIT) {
