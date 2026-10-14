@@ -23,7 +23,7 @@ El sistema está compuesto por la placa de desarrollo y los siguientes periféri
 
 ## 3. Hardware utilizado
 * **Placa de desarrollo:** NUCLEO-F446RE (microcontrolador STM32F446RE).
-* **Sensor de temperatura y humedad:** DHT22 (AM2302) por bus de un solo cable.
+* **Sensor de temperatura y humedad:** DHT22 (AM2302) mediante protocolo unifilar.
 * **Pantalla:** LCD 16x2 (controlador HD44780) con módulo adaptador I2C (chip PCF8574).
 * **Entradas y salidas de la placa:** Pulsador de usuario B1 (PC13) y LED de estado LD2 (PA5).
 * **Comunicación serie:** USART2 (115200 bps, 8N1) conectada a la PC mediante el puerto serie virtual del ST-LINK.
